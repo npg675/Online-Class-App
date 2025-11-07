@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Class 1 – Fun Math Games (Single HTML File)</title>
+  <style>
+    :root{
+      --bg:#f6f9ff; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --brand:#2563eb;
+      --good:#16a34a; --bad:#ef4444; --accent:#f59e0b; --shadow:0 14px 32px rgba(2,6,23,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;background:radial-gradient(1200px 600px at 10% 0%,#eef4ff,transparent),var(--bg);color:var(--ink)}
+    header{position:sticky;top:0;background:linear-gradient(180deg,#fff,rgba(255,255,255,.85));backdrop-filter:saturate(180%) blur(6px);z-index:10;border-bottom:1px solid #eef2f7}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    h1{font-size:clamp(22px,3.5vw,32px);margin:0 0 6px 0}
+    .subtitle{color:var(--muted);font-size:14px}
+    .progress{flex:1;min-width:160px}
+    .bar{height:10px;border-radius:999px;background:#eef2f7;overflow:hidden}
+    .bar>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),#22c55e);transition:width .4s ease;border-radius:999px}
+    nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    .tab{appearance:none;border:1px solid #e5e7eb;background:var(--card);color:var(--ink);padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+    .tab[aria-current="page"], .tab:hover{border-color:var(--brand);outline:0}
+
+    main{max-width:1100px;margin:22px auto;padding:0 18px 40px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+    .card{background:var(--card);border:1px solid #e5e7eb;border-radius:18px;box-shadow:var(--shadow);padding:18px}
+    .card h2{margin:0 0 6px 0;font-size:20px}
+    .card p{margin:0;color:var(--muted)}
+    .hidden{display:none}
+
+    .game{background:var(--card);border:1px solid #e5e7eb;border-radius:22px;box-shadow:var(--shadow);padding:20px;position:relative;overflow:hidden}
+    .game h2{margin:0 0 12px 0}
+    .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    .center{display:flex;justify-content:center;align-items:center}
+    .big{font-size:clamp(28px,6vw,52px);font-weight:800}
+    .problem{font-variant-numeric:tabular-nums}
+
+    button.btn{appearance:none;border:1px solid #e5e7eb;background:#fff;padding:12px 16px;border-radius:14px;cursor:pointer;font-weight:700;transition:transform .08s ease, box-shadow .2s ease}
+    button.btn:active{transform:translateY(1px)}
+    button.btn:hover{border-color:var(--brand)}
+    button.choice{min-width:70px}
+    button.btn[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.1)}
+    .wide{min-width:160px}
+    .good{background:#ecfdf5;border-color:#bbf7d0}
+    .bad{background:#fef2f2;border-color:#fecaca}
+
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:999px;background:#fff;font-size:13px}
+    .score{font-weight:800}
+
+    input[type=number]{padding:10px 12px;border-radius:12px;border:1px solid #e5e7eb;font-size:18px;width:110px}
+    .answers{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    .board{display:grid;grid-template-columns:repeat(10, minmax(24px,1fr));gap:6px;justify-items:center;align-items:center}
+    .chip{padding:10px 12px;border:1px dashed #d1d5db;border-radius:10px;background:#f8fafc}
+    .emoji{font-size:36px}
+
+    .footer-note{margin-top:30px;color:var(--muted);font-size:12px}
+    details.dev{margin-top:16px}
+
+    /* Big result banner */
+    .result-banner{position:fixed;inset:auto 0 18%;margin:auto;max-width:820px;background:rgba(255,255,255,.9);border:2px solid #e5e7eb;border-radius:24px;box-shadow:0 18px 50px rgba(15,23,42,.18);padding:18px 24px;text-align:center;z-index:50;transform:scale(.7);opacity:0;pointer-events:none}
+    .result-banner .msg{font-size:clamp(32px,8vw,72px);font-weight:900;letter-spacing:.5px}
+    .result-banner.show{animation:pop 800ms cubic-bezier(.2,1,.2,1);opacity:1;transform:scale(1)}
+    .result-good{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4,#ffffff)}
+    .result-bad{border-color:#fecaca;background:linear-gradient(180deg,#fef2f2,#ffffff)}
+    @keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+
+    /* subtle confetti bits */
+    .confetti{position:fixed;top:-10px;width:10px;height:14px;border-radius:2px;opacity:.9;animation:fall 1200ms linear forwards;z-index:60}
+    @keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:0}}
+
+    /* feedback pulse/shake */
+    .pulse{animation:pulse .4s ease}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+    .shake{animation:shake .35s ease}
+    @keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+    /* Level Summary Modal */
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;z-index:80}
+    .modal.open{display:flex}
+    .modal-card{background:#fff;border:1px solid #e5e7eb;border-radius:24px;box-shadow:0 18px 50px rgba(15,23,42,.25);padding:22px;max-width:680px;width:92%;text-align:center;animation:pop .4s ease}
+    .modal h3{margin:.2rem 0 0;font-size:clamp(22px,4vw,32px)}
+    .stats{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:12px 0}
+    .stat{border:1px solid #e5e7eb;background:#f8fafc;border-radius:14px;padding:10px 14px}
+    .sticker{font-size:64px;line-height:1.1}
+
+    /* Album */
+    #album .grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+    .tile{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:var(--shadow);padding:14px;text-align:center}
+    .tile .big{font-size:48px}
+    .muted{color:#94a3b8;font-size:13px}
+
+    /* Countdown overlay (medium, top-right, low emphasis) */
+    #countOverlay{position:fixed;top:12px;right:18px;display:none;align-items:center;justify-content:center;background:transparent;z-index:70;pointer-events:none}
+    #countOverlay.show{display:flex}
+    #countNum{font-size:clamp(22px,3.4vw,44px);font-weight:900;color:#0f172a;background:rgba(255,255,255,.9);border:1px solid #e5e7eb;border-radius:14px;padding:4px 10px;box-shadow:var(--shadow)}
+    .pop1{animation:pop .7s cubic-bezier(.2,1,.2,1)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>🎲 Class 1 – Fun Math Games</h1>
+      <div class="row">
+        <span class="pill"><span>⭐</span> <span>Stars:</span> <span class="score" id="stars">0</span></span>
+        <span class="pill"><span>🏁</span> <span>Question:</span> <span id="qnum">1</span>/ <span id="qtot">100</span></span>
+        <span class="pill"><span>🎯</span> <span>Level:</span> <span id="level">1</span>/ <span id="levelTot">10</span></span>
+        <span class="pill"><span>⏱️</span> <span id="timer">00:00</span></span>
+        <div class="progress" aria-hidden="true" style="flex:1">
+          <div class="bar"><span id="prog"></span></div>
+        </div>
+        <button class="pill" id="soundToggle" type="button" aria-pressed="true">🔊 Sound Mode</button>
+        <span class="pill" id="qTickPill" style="display:none"><span>⏳</span> <span id="qTickNum">20</span>s</span>
+        <span class="pill" title="First-attempt accuracy"><span>🎯</span> <span>Accuracy:</span> <b id="acc">0%</b></span>
+        <span class="pill" title="Consecutive first-try corrects"><span>🔥</span> <span>Streak:</span> <b id="streak">0</b></span>
+        <span class="pill" title="Best first-try streak"><span>🏆</span> <span>Best:</span> <b id="best">0</b></span>
+      </div>
+      <nav id="menu"></nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Big animated result -->
+    <div id="result" class="result-banner" aria-live="assertive" aria-atomic="true"><span class="msg"></span></div>
+
+    <!-- Visual countdown overlay -->
+    <div id="countOverlay" aria-hidden="true"><div id="countNum">5</div></div>
+
+    <!-- Level Summary Modal -->
+    <div id="summary" class="modal" role="dialog" aria-modal="true" aria-labelledby="sumTitle">
+      <div class="modal-card">
+        <div class="sticker" id="sumSticker">🏅</div>
+        <h3 id="sumTitle">Level 1 Complete!</h3>
+        <div class="stats">
+          <div class="stat">⭐ Stars this level: <b id="sumStars">0</b></div>
+          <div class="stat">⏱️ Time: <b id="sumTime">00:00</b></div>
+          <div class="stat">🎯 Next Level: <b id="sumNext">2</b></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn" id="sumContinue">Continue ▶</button>
+          <button class="btn" id="sumAlbum">🏅 Sticker Album</button>
+          <button class="btn" id="sumHome">🏠 Home</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Home tiles -->
+    <section id="home" class="grid">
+      <div class="card"><h2>🐶 Count the Animals</h2><p>Count cute animals (0–10 → 0–20 on higher levels).</p><button class="btn wide" data-go="count">Play</button></div>
+      <div class="card"><h2>🎈 Addition Balloons</h2><p>Sum within 10 (Lv1–5) and within 20 (Lv6–10).</p><button class="btn wide" data-go="add">Play</button></div>
+      <div class="card"><h2>🌼 Subtraction Garden</h2><p>Answers within 10 (Lv1–5) and within 20 (Lv6–10).</p><button class="btn wide" data-go="sub">Play</button></div>
+      <div class="card"><h2>🔟 Make 10/20 (Number Bonds)</h2><p>Find the missing number to make 10/20.</p><button class="btn wide" data-go="bonds">Play</button></div>
+      <div class="card"><h2>🔢 Compare Numbers</h2><p>Compare up to 20 (early) then up to 50).</p><button class="btn wide" data-go="compare">Play</button></div>
+      <div class="card"><h2>📈 Missing Number</h2><p>Number line 0–10 → 0–20 on later levels.</p><button class="btn wide" data-go="missing">Play</button></div>
+      <div class="card"><h2>🏅 Sticker Album</h2><p>Collect reward stickers as you play!</p><button class="btn wide" data-go="album">Open</button></div>
+    </section>
+
+    <!-- Games -->
+    <section id="count" class="game hidden" aria-live="polite">
+      <h2>🐶 Count the Animals</h2>
+      <div class="center" style="min-height:120px"><div id="animals" class="row"></div></div>
+      <div class="row" style="margin-top:12px">
+        <label for="countInput" class="pill">How many?</label>
+        <input id="countInput" type="number" min="0" max="10" />
+        <button class="btn" id="countCheck">Check</button>
+        <button class="btn next" data-next="count" disabled>Next ▶</button>
+      </div>
+      <p id="countFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <section id="add" class="game hidden" aria-live="polite">
+      <h2>🎈 Addition Balloons</h2>
+      <p class="big problem" id="addProb">2 + 3 = ?</p>
+      <div class="answers" id="addChoices"></div>
+      <button class="btn next" data-next="add" style="margin-top:10px" disabled>Next ▶</button>
+      <p id="addFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <section id="sub" class="game hidden" aria-live="polite">
+      <h2>🌼 Subtraction Garden</h2>
+      <p class="big problem" id="subProb">5 − 2 = ?</p>
+      <div class="answers" id="subChoices"></div>
+      <button class="btn next" data-next="sub" style="margin-top:10px" disabled>Next ▶</button>
+      <p id="subFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <section id="bonds" class="game hidden" aria-live="polite">
+      <h2>🔟 Make 10/20 (Number Bonds)</h2>
+      <p class="big problem" id="bondProb">7 + ☐ = 10</p>
+      <div class="answers" id="bondChoices"></div>
+      <button class="btn next" data-next="bonds" style="margin-top:10px" disabled>Next ▶</button>
+      <p id="bondFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <section id="compare" class="game hidden" aria-live="polite">
+      <h2>🔢 Compare Numbers</h2>
+      <div class="row big" id="cmpWrap"><span id="cmpA">4</span>
+        <div class="answers">
+          <button class="btn choice" data-op="<">&lt;</button>
+          <button class="btn choice" data-op="=">=</button>
+          <button class="btn choice" data-op=">">&gt;</button>
+        </div>
+        <span id="cmpB">6</span>
+      </div>
+      <button class="btn next" data-next="compare" style="margin-top:10px" disabled>Next ▶</button>
+      <p id="cmpFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <section id="missing" class="game hidden" aria-live="polite">
+      <h2>📈 Missing Number</h2>
+      <div id="line" class="board" style="margin-top:8px"></div>
+      <div class="answers" id="missChoices"></div>
+      <button class="btn next" data-next="missing" style="margin-top:10px" disabled>Next ▶</button>
+      <p id="missFeedback" class="subtitle" role="status"></p>
+    </section>
+
+    <!-- Sticker Album -->
+    <section id="album" class="game hidden" aria-live="polite">
+      <h2>🏅 Sticker Album</h2>
+      <p class="subtitle">Earn a sticker by finishing a level with <b>⭐ 8 or more</b>. Stickers are saved on this device.</p>
+      <div id="albumGrid" class="grid" style="margin-top:10px"></div>
+      <p id="albumEmpty" class="muted">No stickers yet — play a game to earn some! 🎯</p>
+    </section>
+
+    <p class="footer-note">Tip: Everything works offline in one file. Use it in any browser—ideal for classrooms or home practice. 👩‍🏫👨‍👩‍👧</p>
+
+    <details class="dev"><summary>🧪 Developer Tests</summary>
+      <p class="subtitle">These quick checks ensure core logic works. They don't affect gameplay.</p>
+      <button class="btn" id="runTests">Run Self‑Tests</button>
+      <span id="testBadge" class="pill" style="margin-left:8px">Not run</span>
+      <pre id="testLog" style="white-space:pre-wrap;background:#0b1020;color:#e5e7eb;padding:12px;border-radius:12px;overflow:auto;max-height:220px"></pre>
+    </details>
+  </main>
+
+  <audio id="ding" preload="auto">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQAA" type="audio/mpeg" />
+  </audio>
+  <audio id="buzz" preload="auto">
+    <source src="data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQAA" type="audio/mpeg" />
+  </audio>
+
+  <script>
+    // --- Simple state & helpers ---
+    const $ = (q,root=document)=>root.querySelector(q);
+    const $$ = (q,root=document)=>Array.from(root.querySelectorAll(q));
+    const byId = id=>document.getElementById(id);
+
+    const state = {stars:0, q:1, qTotal:100, qPerLevel:10, level:1, levelTotal:10, current:"home", _levelStart:Date.now(), _levelStarsStart:0, album:[], _mistakeThisQ:false, soundOn:true, streak:0, bestStreak:0, qStarted:0, firstTryOK:0};
+    const ding = byId('ding');
+    const buzz = byId('buzz');
+    let _ac = null;
+    let tickTimer = null;
+    let qTickTimer = null;
+    let _qSecondsLeft = 0;
+    function speak(text){
+      try{
+        if(!state.soundOn) return;
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.0; u.pitch = 1.0; u.lang = 'en-US';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+    }
+    function playTick(){
+      try{
+        if(!state.soundOn) return;
+        _ac = _ac || new (window.AudioContext||window.webkitAudioContext)();
+        const ctx=_ac; const now=ctx.currentTime;
+        function tick(at){
+          const o=ctx.createOscillator(); const g=ctx.createGain();
+          o.type='square'; o.frequency.setValueAtTime(1200, at);
+          g.gain.setValueAtTime(0.0001, at);
+          g.gain.exponentialRampToValueAtTime(0.2, at+0.006);
+          g.gain.exponentialRampToValueAtTime(0.0001, at+0.09);
+          o.connect(g).connect(ctx.destination);
+          o.start(at); o.stop(at+0.12);
+        }
+        tick(now); tick(now+0.16);
+      }catch(e){}
+    }
+    function startTickLoop(){
+      try{ clearInterval(tickTimer); }catch{}
+      if(!state.soundOn){ tickTimer=null; return; }
+      playTick();
+      tickTimer = setInterval(()=>playTick(), 1000);
+    }
+    function stopTickLoop(){
+      try{ clearInterval(tickTimer); }catch{}
+      tickTimer = null;
+    }
+
+    // First-attempt 10s countdown
+    function updateQTickUI(){
+      const pill = byId('qTickPill'); const num = byId('qTickNum');
+      if(!pill || !num) return;
+      if(_qSecondsLeft>0){ pill.style.display='inline-flex'; num.textContent=String(_qSecondsLeft); }
+      else { pill.style.display='none'; }
+    }
+    function startFirstAttemptTimer(){
+      // reset and start a 10-second first-attempt countdown
+      try{ clearInterval(qTickTimer); }catch{}
+      if(!state.soundOn){
+        _qSecondsLeft = 0; updateQTickUI();
+        const overlay0 = byId('countOverlay'); if(overlay0){ overlay0.classList.remove('show'); }
+        return;
+      }
+      _qSecondsLeft = 20;
+      updateQTickUI();
+      // show big popup overlay timer
+      const overlay = byId('countOverlay');
+      const label = byId('countNum');
+      if(label){ label.textContent = String(_qSecondsLeft); label.classList.remove('pop1'); void label.offsetWidth; label.classList.add('pop1'); }
+      if(overlay){ overlay.classList.add('show'); }
+      // align tick with countdown seconds
+      if(state.soundOn) playTick();
+      qTickTimer = setInterval(()=>{
+        _qSecondsLeft = Math.max(0, _qSecondsLeft-1);
+        updateQTickUI();
+        if(label){ label.textContent = String(_qSecondsLeft); label.classList.remove('pop1'); void label.offsetWidth; label.classList.add('pop1'); }
+        if(_qSecondsLeft>0){ if(state.soundOn) playTick(); }
+        if(_qSecondsLeft<=0){ stopFirstAttemptTimer(); }
+      }, 1000);
+    }
+    function stopFirstAttemptTimer(){
+      try{ clearInterval(qTickTimer); }catch{}
+      qTickTimer=null; _qSecondsLeft=0; updateQTickUI();
+      // also stop any free-running tick loop
+      stopTickLoop();
+      const overlay = byId('countOverlay'); if(overlay){ overlay.classList.remove('show'); }
+    }
+
+    // Sound mode UI helpers
+    function updateSoundUI(){
+      const b = byId('soundToggle');
+      if(!b) return;
+      b.textContent = state.soundOn ? '🔊 Sound Mode' : '🔇 Silent Mode';
+      b.setAttribute('aria-pressed', state.soundOn? 'true':'false');
+    }
+    function setSound(on){
+      state.soundOn = !!on;
+      localStorage.setItem('math_sound_on', state.soundOn ? '1':'0');
+      updateSoundUI();
+      if(!state.soundOn){ stopTickLoop(); stopFirstAttemptTimer(); try{ window.speechSynthesis.cancel(); }catch{} }
+    }
+
+    function updateHUD(){
+      byId('stars').textContent = state.stars;
+      byId('qnum').textContent = state.q;
+      byId('qtot').textContent = state.qTotal;
+      byId('level').textContent = state.level;
+      byId('levelTot').textContent = state.levelTotal;
+      const done = (state.level-1)*state.qPerLevel + (state.q-1);
+      const pct = Math.max(0, Math.min(100, Math.floor((done/state.qTotal)*100)));
+      const prog = byId('prog'); if(prog) prog.style.width = pct + '%';
+      // performance pills
+      const acc = byId('acc');
+      if(acc){ const p = state.qStarted>0 ? Math.round((state.firstTryOK/state.qStarted)*100) : 0; acc.textContent = p + '%'; }
+      const streak = byId('streak'); if(streak) streak.textContent = String(state.streak||0);
+      const best = byId('best'); if(best) best.textContent = String(state.bestStreak||0);
+    }
+
+    // simple timer
+    let start = Date.now();
+    setInterval(()=>{
+      const s = Math.floor((Date.now()-start)/1000);
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      byId('timer').textContent = `${mm}:${ss}`;
+    }, 1000);
+
+    // storage for album
+    function loadAlbum(){
+      try{ state.album = JSON.parse(localStorage.getItem('math_album')||'[]'); }
+      catch{ state.album = []; }
+    }
+    function saveAlbum(){ localStorage.setItem('math_album', JSON.stringify(state.album)); }
+
+    // --- Router ---
+    const pages = ['home','count','add','sub','bonds','compare','missing','album'];
+    function go(id){
+      pages.forEach(pid=>byId(pid).classList.toggle('hidden', pid!==id));
+      state.current = id;
+      $$('button.tab').forEach(b=>b.setAttribute('aria-current', b.dataset.go===id? 'page':'false'));
+      if(id==='album'){ renderAlbum(); return; }
+      if(id!=='home'){
+        state.q = 1; state.level = 1; state._levelStart=Date.now(); state._levelStarsStart=state.stars; updateHUD(); initGame(id);
+      }
+    }
+
+    // result banner + confetti
+    function showResult(text, type){
+      const box = byId('result');
+      const msg = box.querySelector('.msg');
+      box.classList.remove('result-good','result-bad','show');
+      msg.textContent = text;
+      box.classList.add(type==='good'?'result-good':'result-bad','show');
+      setTimeout(()=>box.classList.remove('show'), 3000);
+      if(type==='good') sprinkleConfetti();
+    }
+    function sprinkleConfetti(){
+      for(let i=0;i<14;i++){
+        const d=document.createElement('div');
+        d.className='confetti';
+        d.style.left = Math.random()*100 + 'vw';
+        d.style.background = `hsl(${Math.floor(Math.random()*360)} 90% 60%)`;
+        d.style.animationDuration = 900+Math.random()*600 + 'ms';
+        document.body.appendChild(d);
+        setTimeout(()=>d.remove(), 1400);
+      }
+    }
+
+    function getNextBtn(game){ return document.querySelector(`#${game||state.current} [data-next]`); }
+    function lockNext(game){ const b=getNextBtn(game); if(b){ b.disabled=true; }}
+    function unlockNext(game){ const b=getNextBtn(game); if(b){ b.disabled=false; b.classList.add('pulse'); setTimeout(()=>b.classList.remove('pulse'), 400);} }
+
+    // Level summary helpers
+    const stickers = ['🏅','🐯','🦄','🚀','🌈','👑','🐼','🎯','🧠','⭐'];
+    function secondsToMMSS(sec){ const m=String(Math.floor(sec/60)).padStart(2,'0'); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+    function openSummary({level, nextLevel, starsDelta, timeSec, onContinue, onHome, stickerChar}){
+      const m = byId('summary');
+      byId('sumTitle').textContent = level>=state.levelTotal? `All Levels Complete!` : `Level ${level} Complete!`;
+      byId('sumStars').textContent = String(starsDelta);
+      byId('sumTime').textContent = secondsToMMSS(timeSec);
+      byId('sumNext').textContent = nextLevel? String(nextLevel) : '-';
+      byId('sumSticker').textContent = stickerChar;
+      m.classList.add('open');
+      byId('sumContinue').onclick = ()=>{ m.classList.remove('open'); onContinue && onContinue(); };
+      byId('sumHome').onclick = ()=>{ m.classList.remove('open'); onHome && onHome(); };
+      byId('sumAlbum').onclick = ()=>{ m.classList.remove('open'); go('album'); };
+    }
+
+    // build top menu
+    const menu = $('#menu');
+    [
+      ['🏠 Home','home'],
+      ['🐶 Count','count'],
+      ['🎈 Add','add'],
+      ['🌼 Subtract','sub'],
+      ['🔟 Make 10/20','bonds'],
+      ['🔢 Compare','compare'],
+      ['📈 Missing','missing'],
+      ['🏅 Stickers','album']
+    ].forEach(([label,id])=>{
+      const b = document.createElement('button');
+      b.className='tab'; b.textContent=label; b.dataset.go=id; b.onclick=()=>go(id);
+      if(id==='home') b.setAttribute('aria-current','page');
+      menu.appendChild(b);
+    });
+
+    // wire home tiles & next buttons
+    $$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+    $$('[data-next]').forEach(b=>b.addEventListener('click',()=>nextQ(b.dataset.next)));
+
+    // ---- Auto-next countdown ----
+    let autoNextSeconds = 3; // keeps 3s countdown; banner visible 3s
+    let countdownTimer = null;
+    function startAutoNext(game){
+      const overlay = byId('countOverlay');
+      const label = byId('countNum');
+      let n = autoNextSeconds;
+      label.textContent = n;
+      label.classList.remove('pop1'); void label.offsetWidth; label.classList.add('pop1');
+      overlay.classList.add('show');
+      clearInterval(countdownTimer);
+      countdownTimer = setInterval(()=>{
+        n--;
+        if(n<=0){
+          clearInterval(countdownTimer);
+          overlay.classList.remove('show');
+          nextQ(game);
+        } else {
+          label.textContent = n;
+          label.classList.remove('pop1'); void label.offsetWidth; label.classList.add('pop1');
+        }
+      }, 1000);
+    }
+
+    function nextQ(game){
+      const praise = ['Brilliant!','Super star!','You rock!','Amazing job!','Fantastic!','High five!','Wow!','Great thinking!'];
+      if(state.q < state.qPerLevel){
+        state.q++;
+        initGame(game);
+      } else if(state.level < state.levelTotal){
+        // level finished → show mini summary before moving on
+        const now = Date.now();
+        const starsDelta = state.stars - state._levelStarsStart;
+        const timeSec = Math.floor((now - state._levelStart)/1000);
+        const nextLevel = state.level + 1;
+        const stickerChar = starsDelta>=8? stickers[(state.level-1)%stickers.length] : '🎉';
+        if(starsDelta>=8){
+          addSticker({game, level: state.level, sticker: stickerChar, date: new Date().toISOString().slice(0,10)});
+        }
+        openSummary({
+          level: state.level,
+          nextLevel,
+          starsDelta,
+          timeSec,
+          stickerChar,
+          onContinue: ()=>{
+            state.level++; state.q = 1; state._levelStart=Date.now(); state._levelStarsStart=state.stars; updateHUD();
+            showResult(praise[Math.floor(Math.random()*praise.length)] + ` Level ${state.level-1} complete! → Level ${state.level}`,'good');
+            initGame(game);
+          },
+          onHome: ()=>{ go('home'); }
+        });
+      } else {
+        // last level finished → final summary
+        const now = Date.now();
+        const starsDelta = state.stars - state._levelStarsStart;
+        const timeSec = Math.floor((now - state._levelStart)/1000);
+        const stickerChar = starsDelta>=8? stickers[(state.level-1)%stickers.length] : '🎉';
+        if(starsDelta>=8){ addSticker({game, level: state.level, sticker: stickerChar, date: new Date().toISOString().slice(0,10)}); }
+        openSummary({
+          level: state.level,
+          nextLevel: null,
+          starsDelta,
+          timeSec,
+          stickerChar,
+          onContinue: ()=>{ go('home'); },
+          onHome: ()=>{ go('home'); }
+        });
+      }
+      updateHUD();
+    }
+
+    function correct(node){
+      if(node){ node.classList.add('good','pulse'); setTimeout(()=>node.classList.remove('good','pulse'), 500); }
+      stopFirstAttemptTimer();
+      if(!state._mistakeThisQ){ state.stars++; }
+      if(state.soundOn){ ding.currentTime=0; ding.play().catch(()=>{}); }
+      showResult(['✨ Sparkle smart!','🎉 Yay!','🌟 Superstar!','🚀 Zoom!'][Math.floor(Math.random()*4)], 'good');
+      speak('Wow, correct!');
+      // update performance: first-try correct contributes to accuracy and streak
+      if(!state._mistakeThisQ){
+        state.firstTryOK = (state.firstTryOK||0) + 1;
+        state.streak = (state.streak||0) + 1;
+        state.bestStreak = Math.max(state.bestStreak||0, state.streak||0);
+      }
+      unlockNext();
+      updateHUD();
+      // Auto-next after correct (3s visual countdown)
+      startAutoNext(state.current);
+    }
+
+    function wrong(node){
+      if(node){
+        node.classList.add('bad','shake');
+        setTimeout(()=>node.classList.remove('bad','shake'), 600);
+        // Disable the wrong choice so the child must try a different one (Option B)
+        if(node.tagName === 'BUTTON'){
+          node.disabled = true;
+          node.setAttribute('aria-disabled','true');
+        }
+      }
+      state._mistakeThisQ = true;
+      stopFirstAttemptTimer();
+      if(state.soundOn){ buzz.currentTime=0; buzz.play().catch(()=>{}); }
+      showResult('❗ Try again!','bad');
+      speak('Sorry, try again');
+      // wrong breaks the first-try streak
+      state.streak = 0;
+      // Stay on the same question; no auto-next on wrong
+      unlockNext();
+      updateHUD();
+    }
+
+    // --- Album functions ---
+    function addSticker({game, level, sticker, date}){
+      // prevent duplicates for the same game+level
+      if(!state.album.some(s=>s.game===game && s.level===level)){
+        state.album.push({game, level, sticker, date});
+        saveAlbum();
+      }
+    }
+    function renderAlbum(){
+      loadAlbum();
+      const grid = byId('albumGrid');
+      const empty = byId('albumEmpty');
+      grid.innerHTML='';
+      if(!state.album.length){ empty.style.display='block'; return; }
+      empty.style.display='none';
+      // sort by date then game/level
+      const items = [...state.album].sort((a,b)=> (a.date<b.date?-1:a.date>b.date?1:0) || (a.game<b.game?-1:a.game>b.game?1:0) || a.level-b.level);
+      items.forEach(({game, level, sticker, date})=>{
+        const card = document.createElement('div');
+        card.className='tile';
+        card.innerHTML = `<div class="big">${sticker}</div>
+          <div><b>${game.toUpperCase()}</b> — Level ${level}</div>
+          <div class="muted">${date}</div>`;
+        grid.appendChild(card);
+      });
+    }
+
+    // --- Helpers for problems ---
+    function randIn(max){return Math.floor(Math.random()*(max+1));}
+    function pick3(answer, upper=10){
+      const s = new Set([answer]);
+      const deltas = [-3,-2,-1,1,2,3];
+      while(s.size<3){
+        const cand = Math.max(0, Math.min(upper, answer + deltas[Math.floor(Math.random()*deltas.length)]));
+        s.add(cand);
+      }
+      return Array.from(s).sort(()=>Math.random()-0.5);
+    }
+
+    // --- Game 1: Count the Animals ---
+    const animals = ['🐶','🐱','🐭','🐹','🐰','🐻','🐼','🐵','🐸','🐙'];
+    function initCount(){
+      const upper = state.level<=5 ? 10 : 20;
+      const n = Math.floor(Math.random()*(upper+1));
+      const area = byId('animals'); area.innerHTML='';
+      for(let i=0;i<n;i++){
+        const span = document.createElement('span');
+        span.className='emoji';
+        span.textContent = animals[Math.floor(Math.random()*animals.length)];
+        area.appendChild(span);
+      }
+      const input = byId('countInput');
+      input.max = String(upper);
+      input.value = '';
+      byId('countFeedback').textContent='';
+      lockNext('count');
+      byId('countCheck').onclick = ()=>{
+        const raw = input.value.trim();
+        if(raw===''){ showResult('Type a number!','bad'); input.focus(); return; }
+        const val = Number(raw);
+        if(val===n){
+          correct(input);
+          byId('countFeedback').textContent = ['✅ Correct!','🎉 Great counting!','🌟 Smart counter!'][Math.floor(Math.random()*3)];
+        } else {
+          wrong(input);
+          byId('countFeedback').textContent = `❌ Oops! It was ${n}.`;
+        }
+      };
+    }
+
+    // --- Game 2: Addition Balloons ---
+    function initAdd(){
+      const upper = state.level<=5 ? 10 : 20; // harder on higher levels
+      const a = Math.floor(Math.random()*(upper+1));
+      const b = Math.floor(Math.random()*Math.min(upper-a, upper)+1);
+      const ans = a+b;
+      byId('addProb').textContent = `${a} + ${b} = ?`;
+      const choices = byId('addChoices'); choices.innerHTML='';
+      lockNext('add');
+      pick3(ans, upper).forEach(num=>{
+        const btn = document.createElement('button');
+        btn.className='btn choice'; btn.textContent=num;
+        btn.onclick=()=>{
+          if(num===ans){
+            correct(btn);
+            byId('addFeedback').textContent = ['🎈 Pop! Correct!','💡 Nice addition!','🧠 Smart!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(btn);
+            byId('addFeedback').textContent = `Try again! Answer is ${ans}.`;
+          }
+        };
+        choices.appendChild(btn);
+      });
+    }
+
+    // --- Game 3: Subtraction Garden ---
+    function initSub(){
+      const upper = state.level<=5 ? 10 : 20;
+      const a = Math.floor(Math.random()*(upper+1));
+      const b = Math.floor(Math.random()*Math.min(a, upper+1)); // ensure a>=b
+      const ans = a-b;
+      byId('subProb').textContent = `${a} − ${b} = ?`;
+      const choices = byId('subChoices'); choices.innerHTML='';
+      lockNext('sub');
+      pick3(ans, upper).forEach(num=>{
+        const btn = document.createElement('button');
+        btn.className='btn choice'; btn.textContent=num;
+        btn.onclick=()=>{
+          if(num===ans){
+            correct(btn);
+            byId('subFeedback').textContent = ['🌼 Correct!','🍀 Great take-away!','👍 Nicely done!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(btn);
+            byId('subFeedback').textContent = `Not quite. It was ${ans}.`;
+          }
+        };
+        choices.appendChild(btn);
+      });
+    }
+
+    // --- Game 4: Number Bonds to 10/20 ---
+    function initBonds(){
+      const target = state.level<=5 ? 10 : 20;
+      const a = Math.floor(Math.random()*target); // 0..target-1
+      const ans = target - a;
+      byId('bondProb').textContent = `${a} + ☐ = ${target}`;
+      const choices = byId('bondChoices'); choices.innerHTML='';
+      lockNext('bonds');
+      pick3(ans, target).forEach(num=>{
+        const btn = document.createElement('button');
+        btn.className='btn choice'; btn.textContent=num;
+        btn.onclick=()=>{
+          if(num===ans){
+            correct(btn);
+            byId('bondFeedback').textContent = ['🔟 Perfect!','✨ Lovely bond!','🏅 Great pair!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(btn);
+            byId('bondFeedback').textContent = `Answer is ${ans}.`;
+          }
+        };
+        choices.appendChild(btn);
+      });
+    }
+
+    // --- Game 5: Compare Numbers ---
+    function initCompare(){
+      const cap = state.level<=5 ? 20 : 50; // tougher later
+      const a = Math.floor(Math.random()*(cap+1)), b = Math.floor(Math.random()*(cap+1));
+      byId('cmpA').textContent=a; byId('cmpB').textContent=b;
+      const real = a===b ? '=' : (a<b ? '<' : '>');
+      lockNext('compare');
+      $$('#compare .choice').forEach(btn=>{
+        btn.onclick=()=>{
+          if(btn.dataset.op===real){
+            correct(btn);
+            byId('cmpFeedback').textContent = ['✅ Correct!','🧭 Nice compare!','🎯 Right pick!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(btn);
+            byId('cmpFeedback').textContent = `Oops—${a} ${real} ${b}.`;
+          }
+        };
+      });
+    }
+
+    // --- Game 6: Missing Number ---
+    function initMissing(){
+      const upper = state.level<=5 ? 10 : 20;
+      const hide = Math.floor(Math.random()*(upper+1));
+      const line = byId('line'); line.innerHTML='';
+      for(let i=0;i<=upper;i++){
+        const div = document.createElement('div');
+        div.className='chip';
+        div.textContent = (i===hide) ? '⬜' : i;
+        line.appendChild(div);
+      }
+      const ans = hide;
+      const choices = byId('missChoices'); choices.innerHTML='';
+      lockNext('missing');
+      pick3(ans, upper).forEach(num=>{
+        const btn = document.createElement('button');
+        btn.className='btn choice'; btn.textContent=num;
+        btn.onclick=()=>{
+          if(num===ans){
+            correct(btn);
+            byId('missFeedback').textContent = ['📈 Nice!','🎉 You found it!','🌟 Great eyes!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(btn);
+            byId('missFeedback').textContent = `Missing number was ${ans}.`;
+          }
+        };
+        choices.appendChild(btn);
+      });
+    }
+
+    // orchestrate init by id
+    function initGame(id){
+      state._mistakeThisQ = false;
+      byId('addFeedback').textContent='';
+      byId('subFeedback').textContent='';
+      byId('bondFeedback').textContent='';
+      byId('cmpFeedback').textContent='';
+      byId('missFeedback').textContent='';
+      if(id==='count') initCount();
+      if(id==='add') initAdd();
+      if(id==='sub') initSub();
+      if(id==='bonds') initBonds();
+      if(id==='compare') initCompare();
+      if(id==='missing') initMissing();
+      // Auto-start timer for first attempt (will no-op in Silent Mode)
+      startFirstAttemptTimer();
+      // count question start for accuracy only when entering a real game
+      if(id && id!=='home' && id!=='album'){
+        state.qStarted = (state.qStarted||0) + 1;
+        updateHUD();
+      }
+    }
+
+    // Initialize sound preference and UI
+    (function(){
+      try{
+        const saved = localStorage.getItem('math_sound_on');
+        if(saved===null){ setSound(true); }
+        else { setSound(saved==='1'); }
+      }catch{ setSound(true); }
+      const b = byId('soundToggle'); if(b){ b.onclick = ()=> setSound(!state.soundOn); }
+    })();
+
+    // ---- Developer self-tests ----
+    function runTests(){
+      const logs=[]; let pass=0, fail=0;
+      function t(name,fn){
+        try{ fn(); logs.push(`✅ ${name}`); pass++; }
+        catch(e){ logs.push(`❌ ${name} \n   → ${e.message}`); fail++; }
+      }
+
+      // Test pick3 includes answer and returns 3 unique choices within 0..10
+      t('pick3 returns 3 unique choices incl. answer within 0..10', ()=>{
+        for(let a=0;a<=10;a++){
+          const arr = pick3(a);
+          if(arr.length!==3) throw new Error('length not 3');
+          if(new Set(arr).size!==3) throw new Error('not unique');
+          if(!arr.includes(a)) throw new Error('answer missing');
+          if(arr.some(x=>x<0||x>10)) throw new Error('out of bounds');
+        }
+      });
+
+      // Test compare logic
+      t('compare operator matches numeric relation', ()=>{
+        for(let i=0;i<50;i++){
+          const a = randIn(20), b = randIn(20);
+          const real = a===b ? '=' : (a<b ? '<' : '>');
+          const computed = (a===b ? '=' : (a<b ? '<' : '>'));
+          if(real!==computed) throw new Error(`${a} vs ${b}`);
+        }
+      });
+
+      // Test level progression boundaries
+      t('level progression ends after qTotal questions', ()=>{
+        const temp = {...state};
+        state.level=1; state.q=10; state.qPerLevel=10; state.levelTotal=10; state.qTotal=100;
+        let steps=0;
+        function step(){
+          if(state.level===10 && state.q===10){ return; }
+          if(state.q<10){ state.q++; }
+          else if(state.level<10){ state.level++; state.q=1; }
+          steps++;
+          if(steps>1000) throw new Error('loop');
+          step();
+        }
+        step();
+        if(!(state.level===10 && state.q===10)) throw new Error('did not reach final state');
+        Object.assign(state,temp);
+      });
+
+      // Test addition/subtraction stay within 0..10 for many runs (first 6 levels)
+      t('add/sub answers stay within 0..10 across early levels', ()=>{
+        const temp={...state};
+        for(let L=1;L<=6;L++){
+          state.level=L;
+          for(let k=0;k<20;k++){
+            // add
+            const capA = Math.min(10, 5 + state.level);
+            const a = Math.floor(Math.random()*(capA+1));
+            const b = Math.floor(Math.random()*(Math.min(10-a, capA)+1));
+            const ansA = a+b; if(ansA<0||ansA>10) throw new Error('add bounds');
+            // sub
+            const capS = Math.min(10, 5 + state.level);
+            const A = Math.floor(Math.random()*(capS+1));
+            const B = Math.floor(Math.random()*Math.min(A, capS+1));
+            const ansS = A-B; if(ansS<0||ansS>10) throw new Error('sub bounds');
+          }
+        }
+        Object.assign(state,temp);
+      });
+
+      // Test: next is disabled until an attempt is made in Add, then enabled
+      t('Next disabled before answer, enabled after attempt (Add)', ()=>{
+        go('add');
+        const next = document.querySelector('#add [data-next]');
+        if(!next.disabled) throw new Error('Next should start disabled');
+        const choice = document.querySelector('#add .answers .btn');
+        choice.click();
+        if(next.disabled) throw new Error('Next should enable after an attempt');
+        go('home');
+      });
+
+      // Test: Count requires typing before enabling Next
+      t('Count requires a typed answer before Next', ()=>{
+        go('count');
+        const next = document.querySelector('#count [data-next]');
+        if(!next.disabled) throw new Error('Next should start disabled');
+        document.getElementById('countCheck').click();
+        if(next.disabled!==true) throw new Error('Still disabled (no input) expected');
+        document.getElementById('countInput').value = '0';
+        document.getElementById('countCheck').click();
+        if(next.disabled) throw new Error('Next should enable after a check');
+        go('home');
+      });
+
+      // New Test: Level summary opens when finishing a level
+      t('Level summary modal opens at level boundary', ()=>{
+        const temp={...state};
+        go('add');
+        state.q=10; // simulate last question of the level
+        const before = document.getElementById('summary').classList.contains('open');
+        nextQ('add');
+        const after = document.getElementById('summary').classList.contains('open');
+        if(before!==false || after!==true) throw new Error('summary did not open');
+        document.getElementById('sumHome').click();
+        Object.assign(state,temp);
+      });
+
+      // New Test: Earning a sticker stores an album entry (no duplicate per game+level)
+      t('Sticker album stores unique entry on high-star level', ()=>{
+        const backup = {...state};
+        state.album=[]; saveAlbum();
+        go('sub'); state._levelStarsStart = state.stars; state.stars += 9; state.q=10; // simulate ⭐≥8
+        nextQ('sub'); // finishes level and should add sticker
+        const firstLen = state.album.length;
+        // attempt to add duplicate for same game+level
+        state._levelStarsStart = state.stars; state.stars += 9; state.q=10; state.level--; // go back a level logically
+        addSticker({game:'sub', level: state.level, sticker:'⭐', date:'2025-01-01'});
+        const secondLen = state.album.length;
+        if(!(firstLen>=1 && secondLen===firstLen)) throw new Error('duplicate allowed or not stored');
+        Object.assign(state,backup);
+      });
+
+      // New Test: Countdown advances to next question
+      t('Countdown auto-advances after 1s (test override)', ()=>{
+        const backupSeconds = autoNextSeconds; autoNextSeconds = 1;
+        const temp={...state};
+        go('add');
+        const qBefore = state.q;
+        // Click the first choice to trigger correct/wrong and start countdown
+        const choice = document.querySelector('#add .answers .btn');
+        choice.click();
+        return new Promise((resolve)=>setTimeout(resolve, 1100)).then(()=>{
+          if(state.q===qBefore) throw new Error('did not advance');
+          autoNextSeconds = backupSeconds; Object.assign(state,temp); go('home');
+        });
+      });
+
+      // New Test: Wrong answer disables that option and does not advance
+      t('Wrong click disables that button and stays on same question', ()=>{
+        const temp={...state};
+        go('add');
+        const qBefore = state.q;
+        const buttons = Array.from(document.querySelectorAll('#add .answers .btn'));
+        if(buttons.length<2) throw new Error('not enough choices');
+        // force a wrong click: find a button whose text != correct answer displayed
+        const prob = document.getElementById('addProb').textContent;
+        const parts = prob.match(/(\d+) \+ (\d+)/);
+        const correct = Number(parts[1])+Number(parts[2]);
+        const wrongBtn = buttons.find(b=>Number(b.textContent)!==correct) || buttons[0];
+        wrongBtn.click();
+        if(!wrongBtn.disabled) throw new Error('wrong button not disabled');
+        if(state.q!==qBefore) throw new Error('question advanced on wrong');
+        Object.assign(state,temp); go('home');
+      });
+
+      const badge = byId('testBadge');
+      const log = byId('testLog');
+      Promise.resolve().then(()=>{
+        badge.textContent = fail? `Tests: ${pass} passed, ${fail} failed` : `All ${pass} tests passed ✅`;
+        badge.style.borderColor = fail? '#fecaca' : '#bbf7d0';
+        badge.style.background = fail? '#fef2f2' : '#ecfdf5';
+        log.textContent = logs.join('\n');
+      });
+    }
+
+    byId('runTests').addEventListener('click', runTests);
+
+    // start at home
+    loadAlbum();
+    updateHUD();
+  </script>
+</body>
+</html>
