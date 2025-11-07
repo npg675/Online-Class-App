@@ -152,7 +152,20 @@
       <div class="card"><h2>🔟 Make 10/20 (Number Bonds)</h2><p>Find the missing number to make 10/20.</p><button class="btn wide" data-go="bonds">Play</button></div>
       <div class="card"><h2>🔢 Compare Numbers</h2><p>Compare up to 20 (early) then up to 50).</p><button class="btn wide" data-go="compare">Play</button></div>
       <div class="card"><h2>📈 Missing Number</h2><p>Number line 0–10 → 0–20 on later levels.</p><button class="btn wide" data-go="missing">Play</button></div>
+      <div class="card"><h2>🧮 Tables Practice</h2><p>10 questions from tables 2–9.</p><button class="btn wide" data-go="table">Play</button></div>
       <div class="card"><h2>🏅 Sticker Album</h2><p>Collect reward stickers as you play!</p><button class="btn wide" data-go="album">Open</button></div>
+    </section>
+
+    <section id="table" class="game hidden" aria-live="polite">
+      <h2>🧮 Tables Practice (2–9)</h2>
+      <p class="big problem" id="tabProb">2 × 3 = ?</p>
+      <div class="row" style="margin-top:12px">
+        <label for="tabInput" class="pill">Your answer</label>
+        <input id="tabInput" type="number" min="0" max="100" />
+        <button class="btn" id="tabCheck">Check</button>
+        <button class="btn next" data-next="table" disabled>Next ▶</button>
+      </div>
+      <p id="tabFeedback" class="subtitle" role="status"></p>
     </section>
 
     <!-- Games -->
@@ -376,7 +389,7 @@
     function saveAlbum(){ localStorage.setItem('math_album', JSON.stringify(state.album)); }
 
     // --- Router ---
-    const pages = ['home','count','add','sub','bonds','compare','missing','album'];
+    const pages = ['home','count','add','sub','bonds','compare','missing','table','album'];
     function go(id){
       pages.forEach(pid=>byId(pid).classList.toggle('hidden', pid!==id));
       state.current = id;
@@ -439,6 +452,7 @@
       ['🔟 Make 10/20','bonds'],
       ['🔢 Compare','compare'],
       ['📈 Missing','missing'],
+      ['🧮 Table','table'],
       ['🏅 Stickers','album']
     ].forEach(([label,id])=>{
       const b = document.createElement('button');
@@ -589,6 +603,33 @@
           <div class="muted">${date}</div>`;
         grid.appendChild(card);
       });
+    }
+
+    // --- Game 7: Tables Practice (2..9) ---
+    function initTable(){
+      const a = 2 + Math.floor(Math.random()*8); // 2..9
+      const b = 1 + Math.floor(Math.random()*10); // 1..10
+      const ans = a*b;
+      byId('tabProb').textContent = `${a} × ${b} = ?`;
+      const input = byId('tabInput');
+      if(input){ input.value=''; input.max='100'; }
+      byId('tabFeedback').textContent='';
+      lockNext('table');
+      const check = byId('tabCheck');
+      if(check){
+        check.onclick = ()=>{
+          const raw = input.value.trim();
+          if(raw===''){ showResult('Type a number!','bad'); input.focus(); return; }
+          const val = Number(raw);
+          if(val===ans){
+            correct(input);
+            byId('tabFeedback').textContent = ['✅ Correct!','🎉 Great!','🌟 Math star!'][Math.floor(Math.random()*3)];
+          } else {
+            wrong(input);
+            byId('tabFeedback').textContent = `Try again! Answer is ${ans}.`;
+          }
+        };
+      }
     }
 
     // --- Helpers for problems ---
@@ -766,12 +807,14 @@
       byId('bondFeedback').textContent='';
       byId('cmpFeedback').textContent='';
       byId('missFeedback').textContent='';
+      const tf=byId('tabFeedback'); if(tf) tf.textContent='';
       if(id==='count') initCount();
       if(id==='add') initAdd();
       if(id==='sub') initSub();
       if(id==='bonds') initBonds();
       if(id==='compare') initCompare();
       if(id==='missing') initMissing();
+      if(id==='table') initTable();
       // Auto-start timer for first attempt (will no-op in Silent Mode)
       startFirstAttemptTimer();
       // count question start for accuracy only when entering a real game
